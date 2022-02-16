@@ -135,17 +135,35 @@ contract('Rosca', (accounts) => {
     });
 
     //TODO check if everybody contributed for current term
-    it("withdrawCurrentTerm_4_withdrawal is allowed only after all member contribute to the cuurent term", async () => {
-
+    it("withdrawCurrentTerm_4_withdrawal is allowed only after all member contribute to the current term", async () => {
+        let termMaturedRosca = await TermMaturedRosca.new('My First Rosca Fund', MONTHLY_TERM, 3, web3.utils.toWei("3", "ether"), { from: managerAccount });
+        await termMaturedRosca.join({ from: memberAccount1 });
+        await termMaturedRosca.join({ from: memberAccount2 });
+        await truffleAssert.reverts(termMaturedRosca.withdrawCurrentTerm({ from: managerAccount }), "Current term has not received payment from all the members");
     });
 
 
 
     it("withdrawCurrentTerm_5_withdrawal is allowed once current term is matured", async () => {
         let termMaturedRosca = await TermMaturedRosca.new('My First Rosca Fund', MONTHLY_TERM, 3, web3.utils.toWei("3", "ether"), { from: managerAccount });
-        // await termMaturedRosca.join({ from: memberAccount1 });
-        //await termMaturedRosca.join({ from: memberAccount2 });
+        await termMaturedRosca.join({ from: memberAccount1 });
+        await termMaturedRosca.join({ from: memberAccount2 });
+        await termMaturedRosca.depositCurrentTerm(web3.utils.toWei("2.9", "ether"), { value: ONE_ETH_TO_WEI, from: managerAccount });
+        await termMaturedRosca.depositCurrentTerm(web3.utils.toWei("2.8", "ether"), { value: ONE_ETH_TO_WEI, from: memberAccount1 });
+        await termMaturedRosca.depositCurrentTerm(web3.utils.toWei("2.95", "ether"), { value: ONE_ETH_TO_WEI, from: memberAccount2 });
+
+        let oldBalance = await web3.eth.getBalance(memberAccount1);
+        await termMaturedRosca.withdrawCurrentTerm({ from: managerAccount });
+        //memberaccount1 must receive the fund
+        let newBalance = await web3.eth.getBalance(memberAccount1);
+        expect(newBalance).to.equal((new BN(oldBalance).add(new BN(web3.utils.toWei("2.8", "ether")))).toString());
     });
+
+    //TODO add surplus amount to the withdrawal if any
+    //TODO what if all biddings are equal for given term , who gets to keep the fund
+    //TODO check if contract balance after withdrawal is proper
+    //TODO check current term advanced to next term after withdrawal
+
 
 
     it("term expiration date calculation is correct", async () => {

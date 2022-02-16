@@ -96,19 +96,23 @@ contract Rosca {
             bid <= fundAmount,
             "Can not accept the fund. Invalid bid amount."
         );
-        //receive_6_mark current term as paid
+        //receive_5_mark current term as paid
         termPaymentsByMember[msg.sender] = currentTerm;
         //receive_6_set current term bid
-        if (!isFundReceived(msg.sender)) {
+        if (!isFundReceivedByMember(msg.sender)) {
             termBidByMember[currentTerm][msg.sender] = bid;
         }
     }
 
-    function getCurrentTermBid(address member) public view returns (uint256) {
+    function getCurrentTermBidByMember(address member)
+        private
+        view
+        returns (uint256)
+    {
         return termBidByMember[currentTerm][member];
     }
 
-    function isFundReceived(address member) public view returns (bool) {
+    function isFundReceivedByMember(address member) public view returns (bool) {
         return fundReceivedByMember[member];
     }
 
@@ -146,12 +150,58 @@ contract Rosca {
         );
 
         //withdrawCurrentTerm_4_Check if everyone contributed their share for this term
+        require(
+            isCurrentTermPaidByAllMembers(),
+            "Current term has not received payment from all the members"
+        );
 
         //withdrawCurrentTerm_5_Withdrawal is allowed
 
         //transfer fund to the lowest bidder
+        address lowestBidder = getCurrentLowestBidder();
+        uint256 lowestbid = getCurrentTermBidByMember(lowestBidder);
+
+        payable(lowestBidder).transfer(lowestbid);
         //advance current term
         currentTerm++;
+    }
+
+    function getCurrentLowestBidder() private view returns (address) {
+        uint256 i;
+        uint256 lowest = 0;
+        address lowestBidder;
+        for (i = 0; i < members.length; i++) {
+            if (isFundReceivedByMember(members[i])) continue;
+            if (lowest == 0) {
+                lowest = getCurrentTermBidByMember(members[i]);
+                lowestBidder = members[i];
+            } else {
+                uint256 bid = getCurrentTermBidByMember(members[i]);
+                if (lowest > bid) {
+                    lowest = bid;
+                    lowestBidder = members[i];
+                }
+            }
+        }
+        return lowestBidder;
+    }
+
+    function isCurrentTermPaidByAllMembers() public view returns (bool) {
+        uint256 i;
+        for (i = 0; i < members.length; i++) {
+            if (!isCurrentTermPaidByMember(members[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function isCurrentTermPaidByMember(address member)
+        public
+        view
+        returns (bool)
+    {
+        return termPaymentsByMember[member] == currentTerm;
     }
 
     function hasCurrentTermMatuared() internal view virtual returns (bool) {
