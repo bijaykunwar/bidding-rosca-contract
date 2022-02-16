@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "chai-bignumber": "^3.0.0",
+    "truffle-assertions": "^0.9.2"
+  }
+}
