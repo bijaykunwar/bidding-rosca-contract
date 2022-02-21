@@ -156,14 +156,21 @@ contract Rosca {
         );
 
         //withdrawCurrentTerm_5_Withdrawal is allowed
-
         //transfer fund to the lowest bidder
         address lowestBidder = getCurrentLowestBidder();
-        uint256 lowestbid = getCurrentTermBidByMember(lowestBidder);
-
-        payable(lowestBidder).transfer(lowestbid);
+        uint256 lowestBid = getCurrentTermBidByMember(lowestBidder);
+        //make sure there is enough balance left for gas fee
+        uint256 payableAmount = calculateNetPay(lowestBid);
+        payable(lowestBidder).transfer(payableAmount);
+        previousTermSurplusAmount = fundAmount.sub(payableAmount);
         //advance current term
         currentTerm++;
+    }
+
+    function calculateNetPay(uint256 grossPay) private pure returns (uint256) {
+        //Deduct 0.5% service fee
+        uint256 netPay = grossPay.sub(grossPay.mul(5).div(1000));
+        return netPay;
     }
 
     function getCurrentLowestBidder() private view returns (address) {

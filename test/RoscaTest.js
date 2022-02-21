@@ -144,7 +144,7 @@ contract('Rosca', (accounts) => {
 
 
 
-    it("withdrawCurrentTerm_5_withdrawal is allowed once current term is matured", async () => {
+    it("withdrawCurrentTerm_5_withdrawal is done to the lowest bidder once current term is matured", async () => {
         let termMaturedRosca = await TermMaturedRosca.new('My First Rosca Fund', MONTHLY_TERM, 3, web3.utils.toWei("3", "ether"), { from: managerAccount });
         await termMaturedRosca.join({ from: memberAccount1 });
         await termMaturedRosca.join({ from: memberAccount2 });
@@ -156,7 +156,8 @@ contract('Rosca', (accounts) => {
         await termMaturedRosca.withdrawCurrentTerm({ from: managerAccount });
         //memberaccount1 must receive the fund
         let newBalance = await web3.eth.getBalance(memberAccount1);
-        expect(newBalance).to.equal((new BN(oldBalance).add(new BN(web3.utils.toWei("2.8", "ether")))).toString());
+        let serviceFee = new BN(web3.utils.toWei("2.8", "ether")).mul(new BN(5)).div(new BN(1000));
+        expect(newBalance).to.equal((new BN(oldBalance).add(new BN(web3.utils.toWei("2.8", "ether")).sub(serviceFee))).toString());
     });
 
     //TODO add surplus amount to the withdrawal if any
